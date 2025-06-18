@@ -1,0 +1,21 @@
+# Node.js
+node_modules/
+.env
+
+# Firebase CLI
+.firebase/
+firebase-debug.log
+
+# Firebase service account keys
+*.json
+!firebase.json        # <-- keep config (optional)
+!.firebaserc          # <-- keep if you collaborate
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS metadata
+.DS_Store
+Thumbs.db
