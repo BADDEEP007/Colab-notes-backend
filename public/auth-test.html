@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Authentication Test - ColabNotes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .auth-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .auth-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .btn.secondary {
+            background: #28a745;
+        }
+        
+        .btn.secondary:hover {
+            background: #218838;
+        }
+        
+        .btn.danger {
+            background: #dc3545;
+        }
+        
+        .btn.danger:hover {
+            background: #c82333;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .result.error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .result.warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .token-display {
+            background: #f1f3f4;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .user-info {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #28a745;
+            margin-top: 20px;
+        }
+        
+        .user-info h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+        
+        .user-info p {
+            margin-bottom: 8px;
+            color: #666;
+        }
+        
+        .user-info strong {
+            color: #333;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 JWT Authentication System</h1>
+            <p>Complete authentication testing interface for ColabNotes</p>
+        </div>
+        
+        <div class="content">
+            <!-- Authentication Section -->
+            <div class="auth-section">
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab('register')">Register</button>
+                    <button class="tab" onclick="showTab('login')">Login</button>
+                    <button class="tab" onclick="showTab('forgot')">Forgot</button>
+                </div>
+                
+                <!-- Register Tab -->
+                <div id="register" class="tab-content active">
+                    <h2>📝 Register New User</h2>
+                    <div class="form-group">
+                        <label>Username:</label>
+                        <input type="text" id="reg-username" placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label>Email:</label>
+                        <input type="email" id="reg-email" placeholder="Enter email">
+                    </div>
+                    <div class="form-group">
+                        <label>Password:</label>
+                        <input type="password" id="reg-password" placeholder="Enter password (min 8 chars)">
+                    </div>
+                    <button class="btn" onclick="registerUser()">Register</button>
+                </div>
+                
+                <!-- Login Tab -->
+                <div id="login" class="tab-content">
+                    <h2>🔑 Login User</h2>
+                    <div class="form-group">
+                        <label>Email:</label>
+                        <input type="email" id="login-email" placeholder="Enter email">
+                    </div>
+                    <div class="form-group">
+                        <label>Password:</label>
+                        <input type="password" id="login-password" placeholder="Enter password">
+                    </div>
+                    <button class="btn" onclick="loginUser()">Login</button>
+                </div>
+                
+                <!-- Forgot Password Tab -->
+                <div id="forgot" class="tab-content">
+                    <h2>🔄 Account Recovery</h2>
+                    <div class="form-group">
+                        <label>Email:</label>
+                        <input type="email" id="forgot-email" placeholder="Enter email">
+                    </div>
+                    <button class="btn secondary" onclick="forgotPassword()">Reset Password</button>
+                    <button class="btn secondary" onclick="recoverUsername()">Recover Username</button>
+                    
+                    <div style="margin-top: 20px;">
+                        <h3>Reset Password with Token</h3>
+                        <div class="form-group">
+                            <label>Reset Token:</label>
+                            <input type="text" id="reset-token" placeholder="Enter reset token from email">
+                        </div>
+                        <div class="form-group">
+                            <label>New Password:</label>
+                            <input type="password" id="new-password" placeholder="Enter new password">
+                        </div>
+                        <button class="btn" onclick="resetPassword()">Reset Password</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Management Section -->
+            <div class="auth-section">
+                <h2>👤 User Management</h2>
+                
+                <div id="logged-out-section">
+                    <p>Please login to access user management features.</p>
+                </div>
+                
+                <div id="logged-in-section" style="display: none;">
+                    <button class="btn secondary" onclick="getCurrentUser()">Get Profile</button>
+                    <button class="btn secondary" onclick="refreshToken()">Refresh Token</button>
+                    <button class="btn danger" onclick="logout()">Logout</button>
+                    
+                    <div style="margin-top: 20px;">
+                        <h3>Change Password</h3>
+                        <div class="form-group">
+                            <label>Current Password:</label>
+                            <input type="password" id="current-password" placeholder="Enter current password">
+                        </div>
+                        <div class="form-group">
+                            <label>New Password:</label>
+                            <input type="password" id="change-new-password" placeholder="Enter new password">
+                        </div>
+                        <button class="btn" onclick="changePassword()">Change Password</button>
+                    </div>
+                </div>
+                
+                <div id="user-info"></div>
+                <div id="token-info"></div>
+            </div>
+        </div>
+        
+        <div id="result" style="padding: 0 30px 30px;"></div>
+    </div>
+
+    <script>
+        let currentTokens = null;
+        
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+        
+        async function registerUser() {
+            const username = document.getElementById('reg-username').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            
+            if (!username || !email || !password) {
+                showResult('Please fill in all fields', 'error');
+                return;
+            }
+            
+            try {
+                showResult('Registering user...', 'warning');
+                
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    currentTokens = data.data.tokens;
+                    showResult('✅ Registration successful!', 'success');
+                    displayUserInfo(data.data.user);
+                    displayTokenInfo(data.data.tokens);
+                    updateLoginState(true);
+                } else {
+                    showResult('❌ Registration failed: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showResult('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function loginUser() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            if (!email || !password) {
+                showResult('Please fill in all fields', 'error');
+                return;
+            }
+            
+            try {
+                showResult('Logging in...', 'warning');
+                
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    currentTokens = data.data.tokens;
+                    showResult('✅ Login successful!', 'success');
+                    displayUserInfo(data.data.user);
+                    displayTokenInfo(data.data.tokens);
+                    updateLoginState(true);
+                } else {
+                    showResult('❌ Login failed: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showResult('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function forgotPassword() {
+            const email = document.getElementById('forgot-email').value;
+            
+            if (!email) {
+                showResult('Please enter email', 'error');
+                return;
+            }
+            
+            try {
+                showResult('Sending password reset email...', 'warning');
+                
+                const response = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                showResult('📧 ' + data.message, 'success');
+            } catch (error) {
+                showResult('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function recoverUsername() {
+            const email = document.getElementById('forgot-email').value;
+            
+            if (!email) {
+                showResult('Please enter email', 'error');
+                return;
+            }
+            
+            try {
+                showResult('Sending username recovery email...', 'warning');
+                
+                const response = await fetch('/api/auth/recover-username', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                showResult('📧 ' + data.message, 'success');
+            } catch (error) {
+                showResult('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function resetPassword() {
+            const token = document.getElementById('reset-token').value;
+            const newPassword = document.getElementById('new-password').value;
+            
+            if (!token || !newPassword) {
+                showResult('Please fill in all fields', 'error');
+                return;
+            }
+            
+            try {
+                showResult('Resetting password...', 'warning');
+                
+                const response = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ token, newPassword })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('✅ ' + data.message, 'success');
+                } else {
+                    showResult('❌ ' + data.message, 'error');
+                }
+            } catch (error) {
+                showResult('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function getCurrentUser() {
+            if (!currentTokens) {
+                showResult('Please login first', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentTokens.accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('✅ Profile retrieved successfully', 'success');
+                    displayUserInfo(data.data.user);
+                } else {
+                    showResult('❌ ' + data.message, 'error');
+                }
+            } catch (error) {
+                showResult('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function refreshToken() {
+            if (!currentTokens) {
+                showResult('Please login first', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ refreshToken: currentTokens.refreshToken })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    currentTokens = data.data.tokens;
+                    showResult('✅ Tokens refreshed successfully', 'success');
+                    displayTokenInfo(data.data.tokens);
+                } else {
+                    showResult('❌ ' + data.message, 'error');
+                }
+            } catch (error) {
+                showResult('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function logout() {
+            if (!currentTokens) {
+                showResult('Not logged in', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentTokens.accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    currentTokens = null;
+                    showResult('✅ Logged out successfully', 'success');
+                    updateLoginState(false);
+                    clearDisplays();
+                } else {
+                    showResult('❌ ' + data.message, 'error');
+                }
+            } catch (error) {
+                showResult('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function changePassword() {
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('change-new-password').value;
+            
+            if (!currentPassword || !newPassword) {
+                showResult('Please fill in all fields', 'error');
+                return;
+            }
+            
+            if (!currentTokens) {
+                showResult('Please login first', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentTokens.accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    currentTokens = null;
+                    showResult('✅ ' + data.message, 'success');
+                    updateLoginState(false);
+                    clearDisplays();
+                } else {
+                    showResult('❌ ' + data.message, 'error');
+                }
+            } catch (error) {
+                showResult('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div class="result ${type}">
+                    <strong>${message}</strong>
+                </div>
+            `;
+        }
+        
+        function displayUserInfo(user) {
+            const userInfoDiv = document.getElementById('user-info');
+            userInfoDiv.innerHTML = `
+                <div class="user-info">
+                    <h3>👤 User Profile</h3>
+                    <p><strong>ID:</strong> ${user.id}</p>
+                    <p><strong>Username:</strong> ${user.username}</p>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>Created:</strong> ${new Date(user.created_at).toLocaleString()}</p>
+                </div>
+            `;
+        }
+        
+        function displayTokenInfo(tokens) {
+            const tokenInfoDiv = document.getElementById('token-info');
+            tokenInfoDiv.innerHTML = `
+                <div class="token-display">
+                    <h4>🔑 JWT Tokens</h4>
+                    <p><strong>Access Token:</strong></p>
+                    <div style="background: #fff; padding: 10px; border-radius: 5px; margin: 5px 0; font-size: 10px;">
+                        ${tokens.accessToken}
+                    </div>
+                    <p><strong>Refresh Token:</strong></p>
+                    <div style="background: #fff; padding: 10px; border-radius: 5px; margin: 5px 0; font-size: 10px;">
+                        ${tokens.refreshToken}
+                    </div>
+                    <p><strong>Expires In:</strong> ${tokens.expiresIn}</p>
+                    <p><strong>Token Type:</strong> ${tokens.tokenType}</p>
+                </div>
+            `;
+        }
+        
+        function updateLoginState(isLoggedIn) {
+            const loggedInSection = document.getElementById('logged-in-section');
+            const loggedOutSection = document.getElementById('logged-out-section');
+            
+            if (isLoggedIn) {
+                loggedInSection.style.display = 'block';
+                loggedOutSection.style.display = 'none';
+            } else {
+                loggedInSection.style.display = 'none';
+                loggedOutSection.style.display = 'block';
+            }
+        }
+        
+        function clearDisplays() {
+            document.getElementById('user-info').innerHTML = '';
+            document.getElementById('token-info').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

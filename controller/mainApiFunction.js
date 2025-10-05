@@ -1,5 +1,5 @@
 import { firestore } from "../utils/firebase.js";
-import { getNotebyid } from "./HelperApiFunction.js";
+import { getNotebyid } from "../middleware/HelperApiFunction.js";
 export const getallnotes = async (req, res) => {
   try {
     
@@ -31,7 +31,6 @@ export const postnotes = async (req, res) => {
     if (!title || !content|| !user) {
       return res.status(400).json({  Error: "Invalid json body" });
     }
-    console.log(1);
      
     const newNote = {
       title,
