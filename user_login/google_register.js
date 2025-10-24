@@ -4,11 +4,11 @@ import { readFileSync } from "fs";
 import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
 import axios from "axios";
-import { 
-  handleGoogleUser, 
-  generateUserSession, 
-  validateGoogleAuth, 
-  handleAuthError 
+import {
+  handleGoogleUser,
+  generateUserSession,
+  validateGoogleAuth,
+  handleAuthError,
 } from "../controller/GoogleAuthController.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -86,12 +86,15 @@ export const GoogleCallback = async (req, res) => {
       });
     }
 
-    console.log("🔄 Processing Google OAuth callback with code:", code.substring(0, 20) + "...");
+    console.log(
+      "🔄 Processing Google OAuth callback with code:",
+      code.substring(0, 20) + "..."
+    );
 
     // Step 1: Exchange code for tokens
     const { tokens } = await oauth2Client.getToken(code);
     const { access_token, id_token, refresh_token } = tokens;
-    
+
     console.log("✅ Successfully exchanged code for tokens");
 
     // Step 2: Verify ID token and get user info
@@ -102,9 +105,12 @@ export const GoogleCallback = async (req, res) => {
     }
 
     // Step 3: Get detailed user info from Google API
-    const userInfoResponse = await axios.get("https://www.googleapis.com/oauth2/v2/userinfo", {
-      headers: { Authorization: `Bearer ${access_token}` }
-    });
+    const userInfoResponse = await axios.get(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      {
+        headers: { Authorization: `Bearer ${access_token}` },
+      }
+    );
 
     const googleUserInfo = userInfoResponse.data;
     console.log("✅ Retrieved user info from Google API");
@@ -113,7 +119,11 @@ export const GoogleCallback = async (req, res) => {
     validateGoogleAuth(googleUserInfo, tokens);
 
     // Step 5: Handle user in database (create or update)
-    const { user: dbUser, isNewUser, googleInfo } = await handleGoogleUser(googleUserInfo, tokens);
+    const {
+      user: dbUser,
+      isNewUser,
+      googleInfo,
+    } = await handleGoogleUser(googleUserInfo, tokens);
 
     // Step 6: Generate session data
     const sessionData = generateUserSession(dbUser, googleInfo);
@@ -121,33 +131,35 @@ export const GoogleCallback = async (req, res) => {
     // Step 7: Return comprehensive response
     res.json({
       status: "success",
-      message: isNewUser ? "New user registered successfully" : "User logged in successfully",
+      message: isNewUser
+        ? "New user registered successfully"
+        : "User logged in successfully",
       data: {
         user: {
           id: dbUser.id,
           username: dbUser.username,
           email: dbUser.gmail,
           created_at: dbUser.created_at,
-          isNewUser
+          isNewUser,
+          tokens
         },
         google_profile: {
           google_id: googleUserInfo.id,
           name: googleUserInfo.name,
           picture: googleUserInfo.picture,
           verified_email: googleUserInfo.verified_email,
-          locale: googleUserInfo.locale
+          locale: googleUserInfo.locale,
         },
         session: sessionData,
         tokens: {
           hasRefreshToken: !!refresh_token,
           hasAccessToken: !!access_token,
-          tokenExpiry: tokens.expiry_date
-        }
-      }
+          tokenExpiry: tokens.expiry_date,
+        },
+      },
     });
 
     console.log(`✅ Google authentication completed for user: ${dbUser.id}`);
-
   } catch (error) {
     console.error("❌ Google authentication failed:", error);
     return handleAuthError(error, res);

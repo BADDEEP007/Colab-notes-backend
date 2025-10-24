@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth + JWT Integration Test</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .oauth-section {
+            border-left: 4px solid #28a745;
+            padding-left: 15px;
+            margin: 20px 0;
+        }
+        .notes-section {
+            border-left: 4px solid #007bff;
+            padding-left: 15px;
+        }
+        .google-section {
+            border-left: 4px solid #4285f4;
+        }
+        .microsoft-section {
+            border-left: 4px solid #0078d4;
+        }
+        .microsoft-btn {
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .microsoft-btn:hover {
+            background-color: #106ebe;
+        }
+        .microsoft-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .token-display {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .notes-demo {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .note-item {
+            background-color: white;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 3px solid #007bff;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 OAuth + JWT Integration Test</h1>
+        <p>Test OAuth authentication with automatic JWT token generation for protected API access.</p>
+        
+        <div class="token-display">
+            <strong>Current JWT Token:</strong><br>
+            <span id="current-token">No token - Please authenticate</span>
+        </div>
+    </div>
+
+    <!-- OAuth Authentication -->
+    <div class="container">
+        <h2>🔑 OAuth Authentication</h2>
+        
+        <div class="grid">
+            <!-- Google OAuth -->
+            <div class="oauth-section google-section">
+                <h3>🔵 Google OAuth</h3>
+                <p>Sign in with Google and get JWT tokens automatically:</p>
+                
+                <div id="g_id_onload"
+                     data-client_id="1030701004644-l5v4omd2i0cntbsjbmpvhsp6ku7db247.apps.googleusercontent.com"
+                     data-callback="handleGoogleCredentialResponse"
+                     data-auto_prompt="false">
+                </div>
+                
+                <div class="g_id_signin" 
+                     data-type="standard" 
+                     data-size="large" 
+                     data-theme="outline" 
+                     data-text="sign_in_with"
+                     data-shape="rectangular"
+                     data-logo_alignment="left">
+                </div>
+
+                <div id="google-result" class="result"></div>
+            </div>
+
+            <!-- Microsoft OAuth -->
+            <div class="oauth-section microsoft-section">
+                <h3>🔷 Microsoft OAuth</h3>
+                <p>Sign in with Microsoft and get JWT tokens automatically:</p>
+                
+                <button id="microsoft-signin-btn" class="microsoft-btn">
+                    <svg width="20" height="20" viewBox="0 0 23 23" fill="currentColor">
+                        <path d="M1 1h10v10H1z"/>
+                        <path d="M12 1h10v10H12z"/>
+                        <path d="M1 12h10v10H1z"/>
+                        <path d="M12 12h10v10H12z"/>
+                    </svg>
+                    Sign in with Microsoft
+                </button>
+
+                <div id="microsoft-result" class="result"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JWT Protected Notes API Demo -->
+    <div class="container notes-section">
+        <h2>📝 JWT Protected Notes API Demo</h2>
+        <p>Once authenticated, test the JWT-protected notes API:</p>
+        
+        <div class="grid">
+            <div>
+                <h3>Create Note</h3>
+                <input type="text" id="note-title" placeholder="Note title" style="width: 100%; padding: 8px; margin: 5px 0;">
+                <textarea id="note-content" placeholder="Note content..." style="width: 100%; padding: 8px; margin: 5px 0; height: 80px;"></textarea>
+                <button class="btn-success" onclick="createNote()">Create Note</button>
+            </div>
+            
+            <div>
+                <h3>Manage Notes</h3>
+                <button class="btn-primary" onclick="getAllNotes()">Get All My Notes</button>
+                <button class="btn-primary" onclick="testProtectedEndpoint()">Test JWT Protection</button>
+                <button class="btn-danger" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div id="notes-result" class="result"></div>
+        
+        <div id="notes-demo" class="notes-demo" style="display: none;">
+            <h3>Your Notes:</h3>
+            <div id="notes-container"></div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('jwtToken');
+        let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        
+        // Update token display on page load
+        updateTokenDisplay();
+
+        function updateTokenDisplay() {
+            const tokenDisplay = document.getElementById('current-token');
+            if (authToken) {
+                tokenDisplay.innerHTML = `
+                    <span style="color: #28a745;">${authToken.substring(0, 50)}...</span><br>
+                    <small>User: ${currentUser?.username || 'Unknown'} (${currentUser?.email || 'No email'})</small><br>
+                    <small>Login Method: ${currentUser?.loginMethod || 'Unknown'}</small>
+                `;
+            } else {
+                tokenDisplay.innerHTML = '<span style="color: #dc3545;">No token - Please authenticate</span>';
+            }
+        }
+
+        function showResult(elementId, message, type) {
+            const resultDiv = document.getElementById(elementId);
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+            resultDiv.style.display = 'block';
+        }
+
+        function saveAuthData(data) {
+            authToken = data.auth.accessToken;
+            currentUser = data.user;
+            localStorage.setItem('jwtToken', authToken);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            updateTokenDisplay();
+        }
+
+        // Google OAuth Handler
+        function handleGoogleCredentialResponse(response) {
+            console.log("Google credential received");
+            showResult("google-result", "Processing Google authentication...", "info");
+            
+            fetch('/api/google/verify-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ credential: response.credential })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showResult("google-result", data, "success");
+                    saveAuthData(data.data);
+                    showResult("google-result", `✅ ${data.message}\n\nJWT Token generated successfully!\nYou can now access protected APIs.`, "success");
+                } else {
+                    showResult("google-result", data, "error");
+                }
+            })
+            .catch(error => {
+                showResult("google-result", `❌ Network error: ${error.message}`, "error");
+            });
+        }
+
+        // Microsoft OAuth Configuration
+        const msalConfig = {
+            auth: {
+                clientId: "YOUR_MICROSOFT_CLIENT_ID", // Replace with your actual client ID
+                authority: "https://login.microsoftonline.com/common",
+                redirectUri: window.location.origin
+            },
+            cache: {
+                cacheLocation: "sessionStorage",
+                storeAuthStateInCookie: false,
+            }
+        };
+
+        const loginRequest = {
+            scopes: ["openid", "profile", "User.Read"]
+        };
+
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+        // Microsoft OAuth Handler
+        document.getElementById('microsoft-signin-btn').addEventListener('click', async () => {
+            const button = document.getElementById('microsoft-signin-btn');
+            button.disabled = true;
+            button.textContent = 'Signing in...';
+            
+            try {
+                showResult("microsoft-result", "Opening Microsoft sign-in popup...", "info");
+                
+                const response = await msalInstance.loginPopup(loginRequest);
+                
+                const tokenRequest = {
+                    scopes: ["User.Read"],
+                    account: response.account
+                };
+
+                const tokenResponse = await msalInstance.acquireTokenSilent(tokenRequest);
+                
+                const backendResponse = await fetch('/api/microsoft/verify-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ access_token: tokenResponse.accessToken })
+                });
+
+                const data = await backendResponse.json();
+
+                if (data.status === 'success') {
+                    showResult("microsoft-result", data, "success");
+                    saveAuthData(data.data);
+                    showResult("microsoft-result", `✅ ${data.message}\n\nJWT Token generated successfully!\nYou can now access protected APIs.`, "success");
+                } else {
+                    showResult("microsoft-result", data, "error");
+                }
+
+            } catch (error) {
+                console.error("Microsoft login failed:", error);
+                showResult("microsoft-result", `❌ Login failed: ${error.message}`, "error");
+            } finally {
+                button.disabled = false;
+                button.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 23 23" fill="currentColor">
+                        <path d="M1 1h10v10H1z"/>
+                        <path d="M12 1h10v10H12z"/>
+                        <path d="M1 12h10v10H1z"/>
+                        <path d="M12 12h10v10H12z"/>
+                    </svg>
+                    Sign in with Microsoft
+                `;
+            }
+        });
+
+        // JWT Protected API Functions
+        async function makeAuthenticatedRequest(url, options = {}) {
+            if (!authToken) {
+                throw new Error('No JWT token. Please authenticate first.');
+            }
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                ...options.headers
+            };
+
+            return fetch(url, { ...options, headers });
+        }
+
+        async function createNote() {
+            const title = document.getElementById('note-title').value;
+            const content = document.getElementById('note-content').value;
+
+            if (!title || !content) {
+                showResult('notes-result', 'Please fill in title and content', 'error');
+                return;
+            }
+
+            try {
+                const response = await makeAuthenticatedRequest('/api/notes/add', {
+                    method: 'POST',
+                    body: JSON.stringify({ title, content })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('notes-result', `✅ Note created successfully!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                    document.getElementById('note-title').value = '';
+                    document.getElementById('note-content').value = '';
+                    getAllNotes();
+                } else {
+                    showResult('notes-result', data, 'error');
+                }
+            } catch (error) {
+                showResult('notes-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function getAllNotes() {
+            try {
+                const response = await makeAuthenticatedRequest('/api/notes/get');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('notes-result', `✅ Notes retrieved successfully!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                    displayNotesList(data.data.notes);
+                } else {
+                    showResult('notes-result', data, 'error');
+                }
+            } catch (error) {
+                showResult('notes-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testProtectedEndpoint() {
+            try {
+                const response = await makeAuthenticatedRequest('/api/auth/me');
+                const data = await response.json();
+                
+                showResult('notes-result', `✅ JWT Protection Working!\n\nCurrent User Info:\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('notes-result', `❌ JWT Protection Test Failed: ${error.message}`, 'error');
+            }
+        }
+
+        function displayNotesList(notes) {
+            const notesDemo = document.getElementById('notes-demo');
+            const notesContainer = document.getElementById('notes-container');
+            
+            if (!notes || notes.length === 0) {
+                notesContainer.innerHTML = '<p>No notes found. Create your first note!</p>';
+                notesDemo.style.display = 'block';
+                return;
+            }
+
+            const notesHtml = notes.map(note => `
+                <div class="note-item">
+                    <h4>${note.title}</h4>
+                    <p><strong>Content:</strong> ${note.content}</p>
+                    <p><strong>Created:</strong> ${new Date(note.Created_on).toLocaleString()}</p>
+                    <p><strong>Author:</strong> ${note.Created_by_username}</p>
+                </div>
+            `).join('');
+
+            notesContainer.innerHTML = notesHtml;
+            notesDemo.style.display = 'block';
+        }
+
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('jwtToken');
+            localStorage.removeItem('currentUser');
+            updateTokenDisplay();
+            showResult('notes-result', '✅ Logged out successfully', 'info');
+            document.getElementById('notes-demo').style.display = 'none';
+        }
+
+        // Auto-load notes if user is already authenticated
+        if (authToken) {
+            getAllNotes();
+        }
+
+        console.log('OAuth + JWT Integration page initialized');
+    </script>
+</body>
+</html>

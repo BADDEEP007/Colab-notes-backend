@@ -24,7 +24,7 @@ export const authenticateToken = async (req, res, next) => {
     const decoded = authService.verifyAccessToken(token);
     
     // Get user from database to ensure they still exist
-    const user = await getUserById(decoded.userId);
+    const user = await getUserById(decoded.userId, 'users');
     
     if (!user) {
       return res.status(401).json({
@@ -85,12 +85,12 @@ export const optionalAuth = async (req, res, next) => {
     }
 
     const decoded = authService.verifyAccessToken(token);
-    const user = await getUserById(decoded.userId);
+    const user = await getUserById(decoded.userId, 'users');
     
     req.user = user ? {
       id: user.id,
       username: user.username,
-      email: user.gmail,
+      email: user.email || user.gmail,
       created_at: user.created_at
     } : null;
 

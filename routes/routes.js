@@ -12,7 +12,18 @@ import {
   GoogleCallback,
 } from "../user_login/google_register.js";
 
+import { verifyGoogleToken } from "../controller/GoogleTokenVerifier.js";
+
 import {
+  Microsoft_Register,
+  MicrosoftCallback,
+} from "../user_login/microsoft_register.js";
+
+import { verifyMicrosoftToken } from "../controller/MicrosoftTokenVerifier.js";
+
+import {
+
+
   UserEntry,
   Getallusers,
   Updateuser,
@@ -33,7 +44,7 @@ import {
   getCurrentUser,
   changePassword,
   SendVerificationmail,
-  Verify_gmail
+  Verify_gmail,
 } from "../controller/authController.js";
 
 import {
@@ -48,13 +59,23 @@ import { validate } from "uuid";
 
 const router = Router();
 
-router.get("/api/notes/get", setHeaders("GET"), getallnotes);
-router.get("/api/notes/get/title/:title", setHeaders("GET"), getNotebyTitle);
-router.post("/api/notes/add", setHeaders("POST"), postnotes);
-router.delete("/api/notes/delete", setHeaders("DELETE"), DeleteNotebyTitle);
-router.put("/api/notes/update/:title", setHeaders("PUT"), updateNote);
-router.post("/api/new_user/register", setHeaders("POST"), User_Register);
+// Notes API - Protected with JWT authentication
+router.get("/api/notes/get", setHeaders("GET"), authenticateToken, getallnotes);
+router.get("/api/notes/get/title/:title", setHeaders("GET"), authenticateToken, getNotebyTitle);
+router.post("/api/notes/add", setHeaders("POST"), authenticateToken, validateRequiredFields(["title", "content"]), postnotes);
+router.delete("/api/notes/delete", setHeaders("DELETE"), authenticateToken, DeleteNotebyTitle);
+router.put("/api/notes/update/:title", setHeaders("PUT"), authenticateToken, updateNote);
+
+
+// Google auth
+router.post("/api/google/register", setHeaders("POST"), User_Register);
 router.get("/api/google/callback", setHeaders("GET"), GoogleCallback);
+router.post("/api/google/verify-token", setHeaders("POST"), verifyGoogleToken);
+
+// Microsoft auth
+router.post("/api/microsoft/register", setHeaders("POST"), Microsoft_Register);
+router.get("/api/microsoft/callback", setHeaders("GET"), MicrosoftCallback);
+router.post("/api/microsoft/verify-token", setHeaders("POST"), verifyMicrosoftToken);
 // JWT Authentication Routes
 router.post(
   "/api/auth/register",
@@ -72,7 +93,7 @@ router.post(
   setHeaders("POST"),
   rateLimitAuth(5, 15 * 60 * 1000), // 5 attempts per 15 minutes
   logAuthEvent("LOGIN"),
-  validateRequiredFields(["email", "password"]),
+  validateRequiredFields(["gmail", "password"]),
   validateEmail,
   loginUser
 );
@@ -97,7 +118,7 @@ router.post(
   setHeaders("POST"),
   rateLimitAuth(3, 60 * 60 * 1000), // 3 attempts per hour
   logAuthEvent("FORGOT_PASSWORD"),
-  validateRequiredFields(["email"]),
+  validateRequiredFields(["gmail"]),
   validateEmail,
   requestPasswordReset
 );
@@ -117,7 +138,7 @@ router.post(
   setHeaders("POST"),
   rateLimitAuth(3, 60 * 60 * 1000), // 3 attempts per hour
   logAuthEvent("RECOVER_USERNAME"),
-  validateRequiredFields(["email"]),
+  validateRequiredFields(["gmail"]),
   validateEmail,
   recoverUsername
 );
@@ -129,18 +150,14 @@ router.get(
   getCurrentUser
 );
 
-router.get(
-  "/api/auth/verify",
-  setHeaders("GET"),
-  Verify_gmail
-)
+router.get("/api/auth/verify", setHeaders("GET"), Verify_gmail);
 
 router.post(
   "/api/sendmail/verification",
-  setHeaders('POST'),
+  setHeaders("POST"),
   validateEmail,
   SendVerificationmail
-)
+);
 
 router.post(
   "/api/auth/change-password",
@@ -160,17 +177,37 @@ router.get("/api/database/users/mail", setHeaders("GET"), GetUserbymail);
 router.put("/api/database/users/:id", setHeaders("PUT"), Updateuser);
 router.delete("/api/database/users/delete", setHeaders("DELETE"), Deleteuser);
 
-
-
 // Test pages
 router.get("/test/google-auth", (req, res) => {
   res.sendFile("google-auth-test.html", { root: "./public" });
 });
 
+router.get("/test/google-popup", (req, res) => {
+  res.sendFile("google-popup-signin.html", { root: "./public" });
+});
+
+router.get("/test/microsoft-popup", (req, res) => {
+  res.sendFile("microsoft-popup-signin.html", { root: "./public" });
+});
+
+router.get("/test/oauth-comparison", (req, res) => {
+  res.sendFile("oauth-comparison.html", { root: "./public" });
+});
+
+router.get("/test/notes-api", (req, res) => {
+  res.sendFile("notes-api-test.html", { root: "./public" });
+});
+
+router.get("/test/oauth-jwt", (req, res) => {
+  res.sendFile("oauth-jwt-integration.html", { root: "./public" });
+});
+
+router.get("/test/jwt-complete", (req, res) => {
+  res.sendFile("jwt-auth-complete-test.html", { root: "./public" });
+});
+
 router.get("/test/jwt-auth", (req, res) => {
   res.sendFile("auth-test.html", { root: "./public" });
 });
-
-
 
 export default router;

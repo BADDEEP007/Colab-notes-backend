@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Sign-In Comparison</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .oauth-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .google-section {
+            border-left: 4px solid #4285f4;
+        }
+        .microsoft-section {
+            border-left: 4px solid #0078d4;
+        }
+        .microsoft-btn {
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .microsoft-btn:hover {
+            background-color: #106ebe;
+        }
+        .microsoft-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .user-info {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .comparison-table th {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OAuth Authentication Comparison</h1>
+        <p>Test both Google and Microsoft OAuth implementations with popup sign-in:</p>
+
+        <!-- Google OAuth Section -->
+        <div class="oauth-section google-section">
+            <h2>🔵 Google OAuth</h2>
+            <p>Sign in with your Google account using Google Identity Services:</p>
+            
+            <div id="g_id_onload"
+                 data-client_id="1030701004644-l5v4omd2i0cntbsjbmpvhsp6ku7db247.apps.googleusercontent.com"
+                 data-callback="handleGoogleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+            
+            <div class="g_id_signin" 
+                 data-type="standard" 
+                 data-size="large" 
+                 data-theme="outline" 
+                 data-text="sign_in_with"
+                 data-shape="rectangular"
+                 data-logo_alignment="left">
+            </div>
+
+            <div id="google-result" class="result"></div>
+            <div id="google-user-info" class="user-info" style="display: none;"></div>
+        </div>
+
+        <!-- Microsoft OAuth Section -->
+        <div class="oauth-section microsoft-section">
+            <h2>🔷 Microsoft OAuth</h2>
+            <p>Sign in with your Microsoft account using MSAL.js:</p>
+            
+            <button id="microsoft-signin-btn" class="microsoft-btn">
+                <svg width="20" height="20" viewBox="0 0 23 23" fill="currentColor">
+                    <path d="M1 1h10v10H1z"/>
+                    <path d="M12 1h10v10H12z"/>
+                    <path d="M1 12h10v10H1z"/>
+                    <path d="M12 12h10v10H12z"/>
+                </svg>
+                Sign in with Microsoft
+            </button>
+
+            <div id="microsoft-result" class="result"></div>
+            <div id="microsoft-user-info" class="user-info" style="display: none;"></div>
+        </div>
+
+        <!-- Comparison Table -->
+        <div class="oauth-section">
+            <h2>📊 Feature Comparison</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Google OAuth</th>
+                        <th>Microsoft OAuth</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Popup Support</td>
+                        <td>✅ Native popup</td>
+                        <td>✅ MSAL popup</td>
+                    </tr>
+                    <tr>
+                        <td>Token Type</td>
+                        <td>ID Token (JWT)</td>
+                        <td>Access Token</td>
+                    </tr>
+                    <tr>
+                        <td>User Info</td>
+                        <td>Basic profile + email</td>
+                        <td>Rich profile + org info</td>
+                    </tr>
+                    <tr>
+                        <td>Refresh Tokens</td>
+                        <td>✅ Available</td>
+                        <td>✅ Available</td>
+                    </tr>
+                    <tr>
+                        <td>Enterprise Features</td>
+                        <td>Limited</td>
+                        <td>✅ Full Azure AD integration</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Google OAuth Handler
+        function handleGoogleCredentialResponse(response) {
+            console.log("Google credential received");
+            showResult("google", "Processing Google authentication...", "loading");
+            
+            fetch('/api/google/verify-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ credential: response.credential })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showResult("google", `✅ ${data.message}`, "success");
+                    displayUserInfo("google", data.data);
+                } else {
+                    showResult("google", `❌ Google auth failed: ${data.message}`, "error");
+                }
+            })
+            .catch(error => {
+                showResult("google", `❌ Network error: ${error.message}`, "error");
+            });
+        }
+
+        // Microsoft OAuth Configuration
+        const msalConfig = {
+            auth: {
+                clientId: "YOUR_MICROSOFT_CLIENT_ID", // Replace with your actual client ID
+                authority: "https://login.microsoftonline.com/common",
+                redirectUri: window.location.origin
+            },
+            cache: {
+                cacheLocation: "sessionStorage",
+                storeAuthStateInCookie: false,
+            }
+        };
+
+        const loginRequest = {
+            scopes: ["openid", "profile", "User.Read"]
+        };
+
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+        // Microsoft OAuth Handler
+        document.getElementById('microsoft-signin-btn').addEventListener('click', async () => {
+            const button = document.getElementById('microsoft-signin-btn');
+            button.disabled = true;
+            button.textContent = 'Signing in...';
+            
+            try {
+                showResult("microsoft", "Opening Microsoft sign-in popup...", "loading");
+                
+                const response = await msalInstance.loginPopup(loginRequest);
+                
+                const tokenRequest = {
+                    scopes: ["User.Read"],
+                    account: response.account
+                };
+
+                const tokenResponse = await msalInstance.acquireTokenSilent(tokenRequest);
+                
+                const backendResponse = await fetch('/api/microsoft/verify-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ access_token: tokenResponse.accessToken })
+                });
+
+                const data = await backendResponse.json();
+
+                if (data.status === 'success') {
+                    showResult("microsoft", `✅ ${data.message}`, "success");
+                    displayUserInfo("microsoft", data.data);
+                } else {
+                    showResult("microsoft", `❌ Microsoft auth failed: ${data.message}`, "error");
+                }
+
+            } catch (error) {
+                console.error("Microsoft login failed:", error);
+                showResult("microsoft", `❌ Login failed: ${error.message}`, "error");
+            } finally {
+                button.disabled = false;
+                button.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 23 23" fill="currentColor">
+                        <path d="M1 1h10v10H1z"/>
+                        <path d="M12 1h10v10H12z"/>
+                        <path d="M1 12h10v10H1z"/>
+                        <path d="M12 12h10v10H12z"/>
+                    </svg>
+                    Sign in with Microsoft
+                `;
+            }
+        });
+
+        function showResult(provider, message, type) {
+            const resultDiv = document.getElementById(`${provider}-result`);
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = message;
+            resultDiv.style.display = 'block';
+        }
+
+        function displayUserInfo(provider, data) {
+            const userInfoDiv = document.getElementById(`${provider}-user-info`);
+            
+            let profileHtml = `
+                <h4>User Information (${provider}):</h4>
+                <p><strong>ID:</strong> ${data.user.id}</p>
+                <p><strong>Username:</strong> ${data.user.username}</p>
+                <p><strong>Email:</strong> ${data.user.email}</p>
+                <p><strong>New User:</strong> ${data.user.isNewUser ? 'Yes' : 'No'}</p>
+                <p><strong>Login Method:</strong> ${data.session.loginMethod}</p>
+                <p><strong>Login Time:</strong> ${data.session.loginTime}</p>
+            `;
+
+            if (provider === 'google') {
+                profileHtml += `
+                    <p><strong>Google ID:</strong> ${data.google_profile.google_id}</p>
+                    <p><strong>Name:</strong> ${data.google_profile.name}</p>
+                    ${data.google_profile.picture ? `<p><strong>Picture:</strong> <img src="${data.google_profile.picture}" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%;"></p>` : ''}
+                `;
+            } else if (provider === 'microsoft') {
+                profileHtml += `
+                    <p><strong>Microsoft ID:</strong> ${data.microsoft_profile.microsoft_id}</p>
+                    <p><strong>Display Name:</strong> ${data.microsoft_profile.display_name}</p>
+                    ${data.microsoft_profile.job_title ? `<p><strong>Job Title:</strong> ${data.microsoft_profile.job_title}</p>` : ''}
+                    ${data.microsoft_profile.office_location ? `<p><strong>Office:</strong> ${data.microsoft_profile.office_location}</p>` : ''}
+                `;
+            }
+            
+            userInfoDiv.innerHTML = profileHtml;
+            userInfoDiv.style.display = 'block';
+        }
+
+        console.log('OAuth comparison page initialized');
+    </script>
+</body>
+</html>

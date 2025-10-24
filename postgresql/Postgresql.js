@@ -67,53 +67,98 @@ class DatabaseManager {
     return `usr_${timestamp}_${randomPart}`;
   }
 
-  async createUser(userData , table) {
-   
-
-    if(!table){
-      return "missing table name";
-    }
-
-    const userId = this.generateUserId();
-
-    try {
-      if (table.trim() === 'baddeep'){
-        
-      const result = await this.pool.query(
-        `INSERT INTO baddeep(id, username, gmail, password, refreshtoken, accesstoken) 
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [userId, userData.username, userData.gmail, userData.Password, userData.refresh_token, userData.Access_Token]
-      );
-
-      console.log(`✅ User created with ID: ${userId}`);
-      return result.rows[0];}
-
-
-       if (table.trim() === 'users'){
-      const result = await this.pool.query(
-        `INSERT INTO users(id, username, email, hashed_password , refresh_token ,expire_time , type) 
-         VALUES ($1, $2, $3, $4, $5 ,$6,$7) RETURNING *`,
-        [userId,userData.username ,userData.gmail ,userData.Hashed_password ,userData.refresh_token,userData.expire_time , userData.type]
-      );
-
-      console.log(`✅ User created with ID: ${userId}`);
-      return result.rows[0];}
-    } catch (error) {
-      if (error.code === "23505") {
-        // Unique constraint violation
-        throw new Error("User with  this email already exists");
-      }
-      console.error("❌ Error creating user:", error);
-      throw error;
-    }
+  async createUser(userData, table) {
+  if (!table) {
+    return "missing table name";
   }
 
-  async getUserById(id) {
+  const userId = this.generateUserId();
+
+  try {
+    const queries = {
+      baddeep: {
+        sql: `INSERT INTO baddeep(id, username, gmail, password, refreshtoken, accesstoken) 
+              VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        params: [
+          userId,
+          userData.username,
+          userData.gmail,
+          userData.Password,
+          userData.refresh_token,
+          userData.Access_Token,
+        ], 
+      },
+      users: {
+        sql: `INSERT INTO users(id, username, email, hashed_password, refresh_token, expire_time, type) 
+              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        params: [
+          userId,
+          userData.username,
+          userData.gmail,
+          userData.Hashed_password,
+          userData.refresh_token,
+          userData.expire_time,
+          userData.type,
+        ],
+      },
+        google: {
+        sql: `INSERT INTO googleuser(id, username, gmail, refresh_token, expire_time, type) 
+              VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        params: [
+          userId,
+          userData.username,
+          userData.gmail,
+          userData.refresh_token,
+          userData.expire_time,
+          userData.type,
+        ],
+      },
+        microsoft: {
+        sql: `INSERT INTO microsoftusers(id, username, gmail,access_token, refresh_token, expire_time, type) 
+              VALUES ($1, $2, $3, $4, $5, $6 ,$7) RETURNING *`,
+        params: [
+          userId,
+          userData.username,
+          userData.gmail,
+          userData.Access_Token,
+          userData.refresh_token, 
+          userData.expire_time,
+          userData.type,
+        ],
+      },
+
+    };
+
+    const query = queries[table.trim()];
+    if (!query) {
+      throw new Error(`❌ Unsupported table: ${table}`);
+    }
+
+    const result = await this.pool.query(query.sql, query.params);
+    console.log(`✅ User created with ID: ${userId}`);
+    return result.rows[0];
+
+  } catch (error) {
+    if (error.code === "23505") {
+      throw new Error("User with this email already exists");
+    }
+    console.error("❌ Error creating user:", error);
+    throw error;
+  }
+}
+
+  async getUserById(id, table = 'users') {
     try {
-      const result = await this.pool.query(
-        `SELECT * FROM baddeep WHERE id = $1`,
-        [id]
-      );
+      let query;
+      if (table.trim() === 'baddeep') {
+        query = `SELECT * FROM baddeep WHERE id = $1`;
+      } else if (table.trim() === 'users') {
+        query = `SELECT * FROM users WHERE id = $1`;
+      } else {
+        throw new Error('Invalid table name');
+      }
+      
+      const result = await this.pool.query(query, [id]);
       return result.rows[0] || null;
     } catch (error) {
       console.error("❌ Error fetching user by ID:", error);
@@ -121,29 +166,52 @@ class DatabaseManager {
     }
   }
 
-  async getUserByEmail(email,table) {
-    try {
-      if(table.trim()==='baddeep'){
+    // async getUserByEmail(email,table) {
+    //   try {
+    //     if(table.trim()==='baddeep'){
 
-        const result = await this.pool.query(
-          `SELECT * FROM baddeep WHERE gmail = $1`,
-          [email]
-        );
-        return result.rows[0] || null;
-      }
-      else if(table.trim()==='users'){
+    //       const result = await this.pool.query(
+    //         `SELECT * FROM baddeep WHERE gmail = $1`,
+    //         [email]
+    //       );
+    //       return result.rows[0] || null;
+    //     }
+    //     else if(table.trim()==='users'){
 
-        const result = await this.pool.query(
-         `SELECT * FROM users WHERE email = $1`,
-         [email]
-       );
-       return result.rows[0] || null;
-      }
-    } catch (error) {
-      console.error("❌ Error fetching user by email:", error);
-      throw error;
+    //       const result = await this.pool.query(
+    //       `SELECT * FROM users WHERE email = $1`,
+    //       [email]
+    //     );
+    //     return result.rows[0] || null;
+    //     }
+    //   } catch (error) {
+    //     console.error("❌ Error fetching user by email:", error);
+    //     throw error;
+    //   }
+    // }
+    async getUserByEmail(email, table) {
+  try {
+    const queries = {
+      baddeep: `SELECT * FROM baddeep WHERE gmail = $1`,
+      users:   `SELECT * FROM users WHERE email = $1`,
+      google: `SELECT * FROM googleuser WHERE gmail = $1`,
+      microsoft: `SELECT * FROM microsoftusers WHERE gmail = $1`
+
+    };
+
+    const query = queries[table.trim()];
+    if (!query) {
+      throw new Error(`❌ Unsupported table: ${table}`);
     }
+
+    const result = await this.pool.query(query, [email]);
+    return result.rows[0] || null;
+
+  } catch (error) {
+    console.error("❌ Error fetching user by email:", error);
+    throw error;
   }
+}
 
   async getAllUsers(limit = 10, offset = 0) {
 
@@ -164,87 +232,100 @@ class DatabaseManager {
   }
 
   async updateUser(id, fields, table) {
-  console.log(table)
-   let allowedFields = []
-   if (table.trim() === 'baddeep'){
-     allowedFields = [
+  const trimmedTable = table.trim();
+ const tablename= {
+   microsoft:'microsoftusers',
+   google:'googleuser',
+   users:'users',
+ } 
+  // Define allowed fields per table
+  const allowedFieldsMap = {
+    baddeep: [
       "username",
       "gmail",
       "hashed_password",
       "refresh_token",
       "expire_time",
-      "type"
-    ];
-
-   }
-   else if (table.trim()==='users'){
-      allowedFields = [
+      "reset_token",
+      "type",
+    ],
+    users: [
       "username",
       "gmail",
+      "reset_token",
       "hashed_password",
       "refresh_token",
       "expire_time",
       "type",
-      "verified"
-    ];
-
-   }
-    const updates = [];
-    const values = [];
-    let index = 1;
-
-    for (const [key, value] of Object.entries(fields)) {
-      if (value !== undefined && allowedFields.includes(key)) {
-        updates.push(`${key} = $${index}`);
-        values.push(value);
-        index++;
-      }
-    }
-
-    if (updates.length === 0) {
-      throw new Error("No valid fields to update");
-    }
-    console.log(updates,values)
-    // Add updated_at timestamp
-
-    try {
-      let result = '';
-      if(table.trim() === 'baddeep'){
-      const query = `
-        UPDATE baddeep
-        SET ${updates.join(", ")} 
-        WHERE id = $${index} 
-        RETURNING *`;
-      values.push(id);
-        
-       result = await this.pool.query(query, values);
-
-      }
+      "verified",
+    ],
+      google: [
+      "username",
+      "gmail",
+      "reset_token",
+      "access_token",  
+      "refresh_token",
+      "expire_time",
+      "type",
+      "verified",
+    ],
+      microsoft: [
+      "username",
+      "gmail",
+      "reset_token",
       
-        else if(table.trim() === 'users'){
-          values.push(id);
-      const query = `
-        UPDATE users
-        SET ${updates.join(", ")} 
-        WHERE id = $${index} 
-        RETURNING *`;
-      console.log(values,query)
+      "refresh_token",
+      "access_token",      "expire_time",
+      "type",
+      "verified",
+    ],
+  };
 
-       result = await this.pool.query(query, values);
+  const allowedFields = allowedFieldsMap[trimmedTable];
+  if (!allowedFields) {
+    throw new Error(`❌ Unsupported table: ${tablename[trimmedTable]}`);
+  }
 
-      }
-    
-      if (result.rows.length === 0) {
-        throw new Error("User not found");
-      }
+  // Build dynamic SET clause
+  const updates = [];
+  const values = [];
+  let index = 1;
 
-      console.log(`✅ User ${id} updated successfully`);
-      return result.rows[0];
-    } catch (error) {
-      console.error("❌ Error updating user:", error);
-      throw error;
+  for (const [key, value] of Object.entries(fields)) {
+    if (value !== undefined && allowedFields.includes(key)) {
+      updates.push(`${key} = $${index}`);
+      values.push(value);
+      index++;
     }
   }
+
+  if (updates.length === 0) {
+    throw new Error("No valid fields to update");
+  }
+
+  // Add id as last parameter
+  values.push(id);
+
+  const query = `
+    UPDATE ${tablename[trimmedTable]}
+    SET ${updates.join(", ")}
+    WHERE id = $${index}
+    RETURNING *`;
+
+  try {
+    const result = await this.pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      throw new Error("User not found");
+    }
+
+    console.log(`✅ User ${id} updated successfully`);
+    return result.rows[0];
+  } catch (error) {
+    console.error("❌ Error updating user:", error);
+    throw error;
+  }
+}
 
   async deleteUser(id) {
     try {
@@ -296,7 +377,7 @@ const dbManager = new DatabaseManager();
 
 // Export individual functions for backward compatibility
 export const createUser = (userData , table) => dbManager.createUser(userData,table);
-export const getUserById = (id) => dbManager.getUserById(id);
+export const getUserById = (id, table) => dbManager.getUserById(id, table);
 export const getUserByEmail = (email, table) => dbManager.getUserByEmail(email,table);
 export const getAllUsers = (limit, offset) =>
   dbManager.getAllUsers(limit, offset);

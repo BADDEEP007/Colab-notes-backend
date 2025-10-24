@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authenticated Notes API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .auth-section {
+            border-left: 4px solid #28a745;
+            padding-left: 15px;
+            margin-bottom: 30px;
+        }
+        .notes-section {
+            border-left: 4px solid #007bff;
+            padding-left: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .auth-btn {
+            background-color: #28a745;
+        }
+        .auth-btn:hover {
+            background-color: #218838;
+        }
+        .danger-btn {
+            background-color: #dc3545;
+        }
+        .danger-btn:hover {
+            background-color: #c82333;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .token-display {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .notes-list {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .note-item {
+            background-color: white;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 3px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Authenticated Notes API Test</h1>
+        <p>Test your JWT-protected notes API. First authenticate, then manage your notes.</p>
+    </div>
+
+    <!-- Authentication Section -->
+    <div class="container auth-section">
+        <h2>🔑 Authentication</h2>
+        
+        <div class="form-group">
+            <label>JWT Token:</label>
+            <div class="token-display" id="token-display">No token - Please login first</div>
+        </div>
+
+        <div class="grid">
+            <div>
+                <h3>Login</h3>
+                <div class="form-group">
+                    <label for="login-email">Email:</label>
+                    <input type="email" id="login-email" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password:</label>
+                    <input type="password" id="login-password" placeholder="Your password">
+                </div>
+                <button class="auth-btn" onclick="login()">Login</button>
+            </div>
+            
+            <div>
+                <h3>Register</h3>
+                <div class="form-group">
+                    <label for="register-username">Username:</label>
+                    <input type="text" id="register-username" placeholder="Your username">
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email:</label>
+                    <input type="email" id="register-email" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password:</label>
+                    <input type="password" id="register-password" placeholder="Strong password">
+                </div>
+                <button class="auth-btn" onclick="register()">Register</button>
+            </div>
+        </div>
+
+        <button class="danger-btn" onclick="logout()">Logout</button>
+        
+        <div id="auth-result" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Notes API Section -->
+    <div class="container notes-section">
+        <h2>📝 Notes Management</h2>
+        
+        <div class="grid">
+            <div>
+                <h3>Create Note</h3>
+                <div class="form-group">
+                    <label for="note-title">Title:</label>
+                    <input type="text" id="note-title" placeholder="Note title">
+                </div>
+                <div class="form-group">
+                    <label for="note-content">Content:</label>
+                    <textarea id="note-content" placeholder="Note content..."></textarea>
+                </div>
+                <button onclick="createNote()">Create Note</button>
+            </div>
+            
+            <div>
+                <h3>Get/Update/Delete Note</h3>
+                <div class="form-group">
+                    <label for="search-title">Title:</label>
+                    <input type="text" id="search-title" placeholder="Note title to find">
+                </div>
+                <div class="form-group">
+                    <label for="update-content">New Content (for update):</label>
+                    <textarea id="update-content" placeholder="Updated content..."></textarea>
+                </div>
+                <button onclick="getNoteByTitle()">Get Note</button>
+                <button onclick="updateNote()">Update Note</button>
+                <button class="danger-btn" onclick="deleteNote()">Delete Note</button>
+            </div>
+        </div>
+
+        <button onclick="getAllNotes()">Get All My Notes</button>
+        
+        <div id="notes-result" class="result" style="display: none;"></div>
+        
+        <div id="notes-list" class="notes-list" style="display: none;">
+            <h3>Your Notes:</h3>
+            <div id="notes-container"></div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('authToken');
+        
+        // Update token display on page load
+        updateTokenDisplay();
+
+        function updateTokenDisplay() {
+            const tokenDisplay = document.getElementById('token-display');
+            if (authToken) {
+                tokenDisplay.textContent = authToken.substring(0, 50) + '...';
+                tokenDisplay.style.color = '#28a745';
+            } else {
+                tokenDisplay.textContent = 'No token - Please login first';
+                tokenDisplay.style.color = '#dc3545';
+            }
+        }
+
+        function showResult(elementId, message, type) {
+            const resultDiv = document.getElementById(elementId);
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+            resultDiv.style.display = 'block';
+        }
+
+        // Authentication Functions
+        async function login() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            if (!email || !password) {
+                showResult('auth-result', 'Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gmail: email, password })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    authToken = data.data.accessToken;
+                    localStorage.setItem('authToken', authToken);
+                    updateTokenDisplay();
+                    showResult('auth-result', `Login successful! Welcome ${data.data.user.username}`, 'success');
+                } else {
+                    showResult('auth-result', `Login failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('auth-result', `Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function register() {
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+
+            if (!username || !email || !password) {
+                showResult('auth-result', 'Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, gmail: email, password })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('auth-result', `Registration successful! Please login with your credentials.`, 'success');
+                } else {
+                    showResult('auth-result', `Registration failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('auth-result', `Network error: ${error.message}`, 'error');
+            }
+        }
+
+        function logout() {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            updateTokenDisplay();
+            showResult('auth-result', 'Logged out successfully', 'info');
+            document.getElementById('notes-list').style.display = 'none';
+        }
+
+        // Notes API Functions
+        async function makeAuthenticatedRequest(url, options = {}) {
+            if (!authToken) {
+                throw new Error('No authentication token. Please login first.');
+            }
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                ...options.headers
+            };
+
+            return fetch(url, { ...options, headers });
+        }
+
+        async function createNote() {
+            const title = document.getElementById('note-title').value;
+            const content = document.getElementById('note-content').value;
+
+            if (!title || !content) {
+                showResult('notes-result', 'Please fill in title and content', 'error');
+                return;
+            }
+
+            try {
+                const response = await makeAuthenticatedRequest('/api/notes/add', {
+                    method: 'POST',
+                    body: JSON.stringify({ title, content })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('notes-result', data, 'success');
+                    document.getElementById('note-title').value = '';
+                    document.getElementById('note-content').value = '';
+                    // Refresh notes list
+                    getAllNotes();
+                } else {
+                    showResult('notes-result', data, 'error');
+                }
+            } catch (error) {
+                showResult('notes-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function getAllNotes() {
+            try {
+                const response = await makeAuthenticatedRequest('/api/notes/get');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('notes-result', data, 'success');
+                    displayNotesList(data.data.notes);
+                } else {
+                    showResult('notes-result', data, 'error');
+                }
+            } catch (error) {
+                showResult('notes-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function getNoteByTitle() {
+            const title = document.getElementById('search-title').value;
+
+            if (!title) {
+                showResult('notes-result', 'Please enter a title', 'error');
+                return;
+            }
+
+            try {
+                const response = await makeAuthenticatedRequest(`/api/notes/get/title/${encodeURIComponent(title)}`);
+                const data = await response.json();
+                
+                showResult('notes-result', data, data.status === 'success' ? 'success' : 'error');
+            } catch (error) {
+                showResult('notes-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function updateNote() {
+            const title = document.getElementById('search-title').value;
+            const content = document.getElementById('update-content').value;
+
+            if (!title || !content) {
+                showResult('notes-result', 'Please enter title and new content', 'error');
+                return;
+            }
+
+            try {
+                const response = await makeAuthenticatedRequest(`/api/notes/update/${encodeURIComponent(title)}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ content })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('notes-result', data, 'success');
+                    getAllNotes(); // Refresh list
+                } else {
+                    showResult('notes-result', data, 'error');
+                }
+            } catch (error) {
+                showResult('notes-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function deleteNote() {
+            const title = document.getElementById('search-title').value;
+
+            if (!title) {
+                showResult('notes-result', 'Please enter a title', 'error');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete the note "${title}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await makeAuthenticatedRequest(`/api/notes/delete?title=${encodeURIComponent(title)}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('notes-result', data, 'success');
+                    getAllNotes(); // Refresh list
+                } else {
+                    showResult('notes-result', data, 'error');
+                }
+            } catch (error) {
+                showResult('notes-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        function displayNotesList(notes) {
+            const notesListDiv = document.getElementById('notes-list');
+            const notesContainer = document.getElementById('notes-container');
+            
+            if (!notes || notes.length === 0) {
+                notesContainer.innerHTML = '<p>No notes found.</p>';
+                notesListDiv.style.display = 'block';
+                return;
+            }
+
+            const notesHtml = notes.map(note => `
+                <div class="note-item">
+                    <h4>${note.title}</h4>
+                    <p><strong>Content:</strong> ${note.content}</p>
+                    <p><strong>Created:</strong> ${new Date(note.Created_on).toLocaleString()}</p>
+                    ${note.Updated_on ? `<p><strong>Updated:</strong> ${new Date(note.Updated_on).toLocaleString()}</p>` : ''}
+                </div>
+            `).join('');
+
+            notesContainer.innerHTML = notesHtml;
+            notesListDiv.style.display = 'block';
+        }
+
+        // Auto-load notes if user is already authenticated
+        if (authToken) {
+            getAllNotes();
+        }
+    </script>
+</body>
+</html>

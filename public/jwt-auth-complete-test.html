@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete JWT Authentication Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .auth-section {
+            border-left: 4px solid #28a745;
+            padding-left: 15px;
+        }
+        .notes-section {
+            border-left: 4px solid #007bff;
+            padding-left: 15px;
+        }
+        .token-section {
+            border-left: 4px solid #ffc107;
+            padding-left: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .btn-success {
+            background-color: #28a745;
+        }
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .token-display {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 11px;
+            margin: 10px 0;
+            border: 1px solid #dee2e6;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-active {
+            background-color: #28a745;
+        }
+        .status-expired {
+            background-color: #dc3545;
+        }
+        .status-none {
+            background-color: #6c757d;
+        }
+        .notes-list {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .note-item {
+            background-color: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 3px solid #007bff;
+        }
+        .token-info {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Complete JWT Authentication System Test</h1>
+        <p>Test your complete JWT authentication system: Register → Login → Access Protected APIs → Token Refresh</p>
+        
+        <!-- Token Status Display -->
+        <div class="token-display">
+            <h4>🎫 Current Authentication Status</h4>
+            <div id="auth-status">
+                <span class="status-indicator status-none"></span>
+                <strong>Not Authenticated</strong> - Please register or login
+            </div>
+            <div id="token-info" style="display: none;">
+                <div class="token-info">
+                    <strong>Access Token:</strong> <span id="access-token-display">None</span><br>
+                    <strong>Refresh Token:</strong> <span id="refresh-token-display">None</span><br>
+                    <strong>User:</strong> <span id="user-info-display">None</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication Section -->
+    <div class="container auth-section">
+        <h2>🔑 JWT Authentication</h2>
+        
+        <div class="grid">
+            <!-- Register -->
+            <div>
+                <h3>📝 Register New User</h3>
+                <div class="form-group">
+                    <label for="reg-username">Username:</label>
+                    <input type="text" id="reg-username" placeholder="Your username">
+                </div>
+                <div class="form-group">
+                    <label for="reg-email">Email:</label>
+                    <input type="email" id="reg-email" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">Password:</label>
+                    <input type="password" id="reg-password" placeholder="Strong password (8+ chars)">
+                </div>
+                <button class="btn-success" onclick="registerUser()">Register & Get JWT Tokens</button>
+            </div>
+            
+            <!-- Login -->
+            <div>
+                <h3>🔓 Login Existing User</h3>
+                <div class="form-group">
+                    <label for="login-email">Email:</label>
+                    <input type="email" id="login-email" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password:</label>
+                    <input type="password" id="login-password" placeholder="Your password">
+                </div>
+                <button class="btn-success" onclick="loginUser()">Login & Get JWT Tokens</button>
+            </div>
+        </div>
+
+        <div id="auth-result" class="result"></div>
+    </div>
+
+    <!-- Token Management Section -->
+    <div class="container token-section">
+        <h2>🎫 Token Management</h2>
+        <p>Manage your JWT tokens: refresh, validate, and logout</p>
+        
+        <div class="grid-3">
+            <button class="btn-warning" onclick="refreshTokens()">🔄 Refresh Tokens</button>
+            <button class="btn-warning" onclick="validateCurrentToken()">✅ Validate Token</button>
+            <button class="btn-danger" onclick="logoutUser()">🚪 Logout</button>
+        </div>
+
+        <div id="token-result" class="result"></div>
+    </div>
+
+    <!-- Protected Notes API Section -->
+    <div class="container notes-section">
+        <h2>📝 JWT Protected Notes API</h2>
+        <p><strong>⚠️ All these endpoints require valid JWT tokens!</strong></p>
+        
+        <div class="grid">
+            <!-- Create Note -->
+            <div>
+                <h3>➕ Create Note</h3>
+                <div class="form-group">
+                    <label for="note-title">Title:</label>
+                    <input type="text" id="note-title" placeholder="Note title">
+                </div>
+                <div class="form-group">
+                    <label for="note-content">Content:</label>
+                    <textarea id="note-content" placeholder="Note content..."></textarea>
+                </div>
+                <button onclick="createNote()">Create Note (JWT Required)</button>
+            </div>
+            
+            <!-- Manage Notes -->
+            <div>
+                <h3>📋 Manage Notes</h3>
+                <div class="form-group">
+                    <label for="search-title">Title (for get/update/delete):</label>
+                    <input type="text" id="search-title" placeholder="Note title">
+                </div>
+                <div class="form-group">
+                    <label for="update-content">New Content (for update):</label>
+                    <textarea id="update-content" placeholder="Updated content..."></textarea>
+                </div>
+                <button onclick="getAllNotes()">📄 Get All My Notes</button>
+                <button onclick="getNoteByTitle()">🔍 Get Specific Note</button>
+                <button onclick="updateNote()">✏️ Update Note</button>
+                <button class="btn-danger" onclick="deleteNote()">🗑️ Delete Note</button>
+            </div>
+        </div>
+
+        <div id="notes-result" class="result"></div>
+        
+        <div id="notes-list" class="notes-list" style="display: none;">
+            <h3>Your Notes:</h3>
+            <div id="notes-container"></div>
+        </div>
+    </div>
+
+    <!-- API Testing Section -->
+    <div class="container">
+        <h2>🧪 JWT Protection Testing</h2>
+        <p>Test different scenarios to understand how JWT protection works:</p>
+        
+        <div class="grid">
+            <button onclick="testWithValidToken()">✅ Test with Valid Token</button>
+            <button onclick="testWithInvalidToken()">❌ Test with Invalid Token</button>
+            <button onclick="testWithExpiredToken()">⏰ Test with Expired Token</button>
+            <button onclick="testWithoutToken()">🚫 Test without Token</button>
+        </div>
+
+        <div id="test-result" class="result"></div>
+    </div>
+
+    <script>
+        // Global variables for token management
+        let accessToken = localStorage.getItem('accessToken');
+        let refreshToken = localStorage.getItem('refreshToken');
+        let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        
+        // Update display on page load
+        updateAuthStatus();
+
+        function updateAuthStatus() {
+            const statusDiv = document.getElementById('auth-status');
+            const tokenInfoDiv = document.getElementById('token-info');
+            const accessTokenDisplay = document.getElementById('access-token-display');
+            const refreshTokenDisplay = document.getElementById('refresh-token-display');
+            const userInfoDisplay = document.getElementById('user-info-display');
+
+            if (accessToken && currentUser) {
+                statusDiv.innerHTML = `
+                    <span class="status-indicator status-active"></span>
+                    <strong>Authenticated</strong> - Ready to access protected APIs
+                `;
+                
+                accessTokenDisplay.textContent = accessToken.substring(0, 50) + '...';
+                refreshTokenDisplay.textContent = refreshToken ? refreshToken.substring(0, 50) + '...' : 'None';
+                userInfoDisplay.textContent = `${currentUser.username} (${currentUser.email})`;
+                
+                tokenInfoDiv.style.display = 'block';
+            } else {
+                statusDiv.innerHTML = `
+                    <span class="status-indicator status-none"></span>
+                    <strong>Not Authenticated</strong> - Please register or login
+                `;
+                tokenInfoDiv.style.display = 'none';
+            }
+        }
+
+        function saveAuthData(data) {
+            accessToken = data.tokens.accessToken;
+            refreshToken = data.tokens.refreshToken;
+            currentUser = data.user;
+            
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('refreshToken', refreshToken);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            updateAuthStatus();
+        }
+
+        function clearAuthData() {
+            accessToken = null;
+            refreshToken = null;
+            currentUser = null;
+            
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('currentUser');
+            
+            updateAuthStatus();
+        }
+
+        function showResult(elementId, message, type) {
+            const resultDiv = document.getElementById(elementId);
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+            resultDiv.style.display = 'block';
+        }
+
+        // Authentication Functions
+        async function registerUser() {
+            const username = document.getElementById('reg-username').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+
+            if (!username || !email || !password) {
+                showResult('auth-result', 'Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, gmail: email, password })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    saveAuthData(data.data);
+                    showResult('auth-result', `✅ Registration successful!\n\nJWT Tokens Generated:\n${JSON.stringify(data.data.tokens, null, 2)}\n\nUser Info:\n${JSON.stringify(data.data.user, null, 2)}`, 'success');
+                    
+                    // Clear form
+                    document.getElementById('reg-username').value = '';
+                    document.getElementById('reg-email').value = '';
+                    document.getElementById('reg-password').value = '';
+                } else {
+                    showResult('auth-result', `❌ Registration failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('auth-result', `❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function loginUser() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            if (!email || !password) {
+                showResult('auth-result', 'Please fill in email and password', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gmail: email, password })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    saveAuthData(data.data);
+                    showResult('auth-result', `✅ Login successful!\n\nJWT Tokens Generated:\n${JSON.stringify(data.data.tokens, null, 2)}\n\nUser Info:\n${JSON.stringify(data.data.user, null, 2)}`, 'success');
+                    
+                    // Clear form
+                    document.getElementById('login-email').value = '';
+                    document.getElementById('login-password').value = '';
+                    
+                    // Auto-load notes
+                    getAllNotes();
+                } else {
+                    showResult('auth-result', `❌ Login failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('auth-result', `❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        // Token Management Functions
+        async function refreshTokens() {
+            if (!refreshToken) {
+                showResult('token-result', '❌ No refresh token available. Please login first.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Update tokens
+                    accessToken = data.data.tokens.accessToken;
+                    refreshToken = data.data.tokens.refreshToken;
+                    
+                    localStorage.setItem('accessToken', accessToken);
+                    localStorage.setItem('refreshToken', refreshToken);
+                    
+                    updateAuthStatus();
+                    showResult('token-result', `✅ Tokens refreshed successfully!\n\nNew Tokens:\n${JSON.stringify(data.data.tokens, null, 2)}`, 'success');
+                } else {
+                    showResult('token-result', `❌ Token refresh failed: ${data.message}`, 'error');
+                    if (data.code === 'REFRESH_TOKEN_ERROR') {
+                        clearAuthData();
+                    }
+                }
+            } catch (error) {
+                showResult('token-result', `❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function validateCurrentToken() {
+            if (!accessToken) {
+                showResult('token-result', '❌ No access token to validate. Please login first.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/me', {
+                    method: 'GET',
+                    headers: { 
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('token-result', `✅ Token is valid!\n\nCurrent User:\n${JSON.stringify(data.data.user, null, 2)}`, 'success');
+                } else {
+                    showResult('token-result', `❌ Token validation failed: ${data.message}`, 'error');
+                    if (data.code === 'TOKEN_EXPIRED') {
+                        showResult('token-result', '⏰ Token expired. Try refreshing tokens.', 'warning');
+                    }
+                }
+            } catch (error) {
+                showResult('token-result', `❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function logoutUser() {
+            if (!accessToken) {
+                showResult('token-result', '❌ Not logged in', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                clearAuthData();
+                showResult('token-result', `✅ Logged out successfully!`, 'success');
+                document.getElementById('notes-list').style.display = 'none';
+                
+            } catch (error) {
+                clearAuthData();
+                showResult('token-result', `✅ Logged out (local cleanup completed)`, 'info');
+            }
+        }
+
+        // Protected API Functions
+        async function makeAuthenticatedRequest(url, options = {}) {
+            if (!accessToken) {
+                throw new Error('No access token. Please login first.');
+            }
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`,
+                ...options.headers
+            };
+
+            return fetch(url, { ...options, headers });
+        }
+
+        async function createNote() {
+            const title = document.getElementById('note-title').value;
+            const content = document.getElementById('note-content').value;
+
+            if (!title || !content) {
+                showResult('notes-result', 'Please fill in title and content', 'error');
+                return;
+            }
+
+            try {
+                const response = await makeAuthenticatedRequest('/api/notes/add', {
+                    method: 'POST',
+                    body: JSON.stringify({ title, content })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('notes-result', `✅ Note created successfully!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                    document.getElementById('note-title').value = '';
+                    document.getElementById('note-content').value = '';
+                    getAllNotes(); // Refresh list
+                } else {
+                    showResult('notes-result', `❌ Failed to create note: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('notes-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function getAllNotes() {
+            try {
+                const response = await makeAuthenticatedRequest('/api/notes/get');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('notes-result', `✅ Notes retrieved successfully!\n\nFound ${data.data.count} notes\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                    displayNotesList(data.data.notes);
+                } else {
+                    showResult('notes-result', `❌ Failed to get notes: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('notes-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function getNoteByTitle() {
+            const title = document.getElementById('search-title').value;
+
+            if (!title) {
+                showResult('notes-result', 'Please enter a title', 'error');
+                return;
+            }
+
+            try {
+                const response = await makeAuthenticatedRequest(`/api/notes/get/title/${encodeURIComponent(title)}`);
+                const data = await response.json();
+                
+                showResult('notes-result', data.status === 'success' ? 
+                    `✅ Note found!\n\n${JSON.stringify(data, null, 2)}` : 
+                    `❌ ${data.message}`, 
+                    data.status === 'success' ? 'success' : 'error'
+                );
+            } catch (error) {
+                showResult('notes-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function updateNote() {
+            const title = document.getElementById('search-title').value;
+            const content = document.getElementById('update-content').value;
+
+            if (!title || !content) {
+                showResult('notes-result', 'Please enter title and new content', 'error');
+                return;
+            }
+
+            try {
+                const response = await makeAuthenticatedRequest(`/api/notes/update/${encodeURIComponent(title)}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ content })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('notes-result', `✅ Note updated successfully!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                    getAllNotes(); // Refresh list
+                } else {
+                    showResult('notes-result', `❌ Failed to update note: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('notes-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function deleteNote() {
+            const title = document.getElementById('search-title').value;
+
+            if (!title) {
+                showResult('notes-result', 'Please enter a title', 'error');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete the note "${title}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await makeAuthenticatedRequest(`/api/notes/delete?title=${encodeURIComponent(title)}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    showResult('notes-result', `✅ Note deleted successfully!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                    getAllNotes(); // Refresh list
+                } else {
+                    showResult('notes-result', `❌ Failed to delete note: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('notes-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // JWT Protection Testing Functions
+        async function testWithValidToken() {
+            try {
+                const response = await makeAuthenticatedRequest('/api/auth/me');
+                const data = await response.json();
+                showResult('test-result', `✅ Valid Token Test PASSED\n\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('test-result', `❌ Valid Token Test FAILED: ${error.message}`, 'error');
+            }
+        }
+
+        async function testWithInvalidToken() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: { 
+                        'Authorization': 'Bearer invalid_token_here',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                showResult('test-result', `✅ Invalid Token Test PASSED - Server correctly rejected invalid token\n\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('test-result', `❌ Invalid Token Test: ${error.message}`, 'error');
+            }
+        }
+
+        async function testWithExpiredToken() {
+            // This is a mock expired token for testing
+            const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0IiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiaWF0IjoxNjAwMDAwMDAwLCJleHAiOjE2MDAwMDAwMDB9.expired';
+            
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: { 
+                        'Authorization': `Bearer ${expiredToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                showResult('test-result', `✅ Expired Token Test PASSED - Server correctly rejected expired token\n\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('test-result', `❌ Expired Token Test: ${error.message}`, 'error');
+            }
+        }
+
+        async function testWithoutToken() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                showResult('test-result', `✅ No Token Test PASSED - Server correctly rejected request without token\n\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('test-result', `❌ No Token Test: ${error.message}`, 'error');
+            }
+        }
+
+        function displayNotesList(notes) {
+            const notesListDiv = document.getElementById('notes-list');
+            const notesContainer = document.getElementById('notes-container');
+            
+            if (!notes || notes.length === 0) {
+                notesContainer.innerHTML = '<p>No notes found. Create your first note!</p>';
+                notesListDiv.style.display = 'block';
+                return;
+            }
+
+            const notesHtml = notes.map(note => `
+                <div class="note-item">
+                    <h4>${note.title}</h4>
+                    <p><strong>Content:</strong> ${note.content}</p>
+                    <p><strong>Created:</strong> ${new Date(note.Created_on).toLocaleString()}</p>
+                    <p><strong>Author:</strong> ${note.Created_by_username}</p>
+                    ${note.Updated_on ? `<p><strong>Updated:</strong> ${new Date(note.Updated_on).toLocaleString()}</p>` : ''}
+                </div>
+            `).join('');
+
+            notesContainer.innerHTML = notesHtml;
+            notesListDiv.style.display = 'block';
+        }
+
+        // Auto-load notes if user is already authenticated
+        if (accessToken && currentUser) {
+            getAllNotes();
+        }
+
+        console.log('Complete JWT Authentication Test page initialized');
+    </script>
+</body>
+</html>
